@@ -2,24 +2,16 @@ package layout
 
 import (
 	"fmt"
+	"github.com/ian-kent/go-log/levels"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/ian-kent/go-log/levels"
 )
 
 // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
-
-// DefaultTimeLayout is the default layout used by %d
-var DefaultTimeLayout = "2006-01-02 15:04:05.000000000 -0700 MST"
-
-// LegacyDefaultTimeLayout is the legacy (non-zero padded) time layout.
-// Set layout.DefaultTimeLayout = layout.LegacyDefaultTimeLayout to revert behaviour.
-var LegacyDefaultTimeLayout = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 type patternLayout struct {
 	Layout
@@ -51,7 +43,7 @@ func getCaller() *caller {
 
 	// TODO feels nasty?
 	dir, fn := filepath.Split(file)
-	bits := strings.Split(dir, "/")
+	bits := strings.Split(dir, string(filepath.Separator))
 	pkg := bits[len(bits)-2]
 
 	if ok {
@@ -82,7 +74,7 @@ func (a *patternLayout) Format(level levels.LogLevel, message string, args ...in
 			return caller.pkg
 		case "d":
 			// FIXME specifier, e.g. %d{HH:mm:ss,SSS}
-			return time.Now().Format(DefaultTimeLayout)
+			return time.Now().String()
 		case "F":
 			return caller.file
 		case "l":

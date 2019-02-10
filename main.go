@@ -7,17 +7,17 @@ import (
 
 	gohttp "net/http"
 
+	cfgcom "github.com/email-tools/MailHog/config"
+	"github.com/email-tools/MailHog/http"
+	"github.com/email-tools/MailHog/mhsendmail/cmd"
+	"github.com/email-tools/MailHog/server/api"
+	cfgapi "github.com/email-tools/MailHog/server/config"
+	"github.com/email-tools/MailHog/server/smtp"
+	"github.com/email-tools/MailHog/ui/assets"
+	cfgui "github.com/email-tools/MailHog/ui/config"
+	"github.com/email-tools/MailHog/ui/web"
 	"github.com/gorilla/pat"
 	"github.com/ian-kent/go-log/log"
-	"github.com/mailhog/MailHog-Server/api"
-	cfgapi "github.com/mailhog/MailHog-Server/config"
-	"github.com/mailhog/MailHog-Server/smtp"
-	"github.com/mailhog/MailHog-UI/assets"
-	cfgui "github.com/mailhog/MailHog-UI/config"
-	"github.com/mailhog/MailHog-UI/web"
-	cfgcom "github.com/mailhog/MailHog/config"
-	"github.com/mailhog/http"
-	"github.com/mailhog/mhsendmail/cmd"
 	"golang.org/x/crypto/bcrypt"
 )
 

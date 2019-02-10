@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,12 +10,26 @@ import (
 	"net/smtp"
 	"os"
 	"os/user"
-)
+	"strings"
 
-import flag "github.com/spf13/pflag"
+	"github.com/ogier/pflag"
+)
 
 // Go runs the MailHog sendmail replacement.
 func Go() {
+	smtpAddr := "localhost:1025"
+
+	goflag := false
+	for _, g := range os.Args[1:] {
+		if strings.HasPrefix(g, "-") && !strings.HasPrefix(g, "--") {
+			if strings.HasPrefix(g, "-from ") || strings.HasPrefix(g, "-from=") ||
+				strings.HasPrefix(g, "-smtp-addr ") || strings.HasPrefix(g, "-smtp-addr=") {
+				goflag = true
+				break
+			}
+		}
+	}
+
 	host, err := os.Hostname()
 	if err != nil {
 		host = "localhost"
@@ -27,32 +42,20 @@ func Go() {
 	}
 
 	fromAddr := username + "@" + host
-	smtpAddr := "localhost:1025"
 	var recip []string
 
-	// defaults from envars if provided
-	if len(os.Getenv("MH_SENDMAIL_SMTP_ADDR")) > 0 {
-		smtpAddr = os.Getenv("MH_SENDMAIL_SMTP_ADDR")
-	}
-	if len(os.Getenv("MH_SENDMAIL_FROM")) > 0 {
-		fromAddr = os.Getenv("MH_SENDMAIL_FROM")
-	}
+	if goflag {
+		flag.StringVar(&smtpAddr, "smtp-addr", smtpAddr, "SMTP server address")
+		flag.StringVar(&fromAddr, "from", fromAddr, "SMTP sender")
 
-	var verbose bool
+		flag.Parse()
+		recip = flag.Args()
+	} else {
+		pflag.StringVar(&smtpAddr, "smtp-addr", smtpAddr, "SMTP server address")
+		pflag.StringVarP(&fromAddr, "from", "f", fromAddr, "SMTP sender")
 
-	// override defaults from cli flags
-	flag.StringVar(&smtpAddr, "smtp-addr", smtpAddr, "SMTP server address")
-	flag.StringVarP(&fromAddr, "from", "f", fromAddr, "SMTP sender")
-	flag.BoolP("long-i", "i", true, "Ignored. This flag exists for sendmail compatibility.")
-	flag.BoolP("long-t", "t", true, "Ignored. This flag exists for sendmail compatibility.")
-	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose mode (sends debug output to stderr)")
-	flag.Parse()
-
-	// allow recipient to be passed as an argument
-	recip = flag.Args()
-
-	if verbose {
-		fmt.Fprintln(os.Stderr, smtpAddr, fromAddr)
+		pflag.Parse()
+		recip = pflag.Args()
 	}
 
 	body, err := ioutil.ReadAll(os.Stdin)

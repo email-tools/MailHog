@@ -1,16 +1,12 @@
 package logger
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
 	"github.com/ian-kent/go-log/appenders"
 	"github.com/ian-kent/go-log/layout"
 	"github.com/ian-kent/go-log/levels"
+	"strings"
 )
 
-// Logger represents a logger
 type Logger interface {
 	Level() levels.LogLevel
 	Name() string
@@ -22,46 +18,32 @@ type Logger interface {
 	GetLogger(string) Logger
 	SetLevel(levels.LogLevel)
 	Log(levels.LogLevel, ...interface{})
-	SetAppender(appender Appender)
-
-	Debug(params ...interface{})
-	Info(params ...interface{})
-	Warn(params ...interface{})
-	Error(params ...interface{})
-	Trace(params ...interface{})
-	Printf(params ...interface{})
-	Println(params ...interface{})
-	Fatal(params ...interface{})
-	Fatalf(params ...interface{})
 }
 
 type logger struct {
-	level       levels.LogLevel
-	name        string
-	enabled     map[levels.LogLevel]bool
-	appender    Appender
-	children    []Logger
-	parent      Logger
-	ExitOnFatal bool
+	Logger
+	level    levels.LogLevel
+	name     string
+	enabled  map[levels.LogLevel]bool
+	appender Appender
+	children []Logger
+	parent   Logger
 }
 
-// Appender represents a log appender
 type Appender interface {
 	Write(level levels.LogLevel, message string, args ...interface{})
 	SetLayout(layout layout.Layout)
 	Layout() layout.Layout
 }
 
-// New returns a new Logger
 func New(name string) Logger {
 	l := Logger(&logger{
-		level:       levels.DEBUG,
-		name:        name,
-		enabled:     make(map[levels.LogLevel]bool),
-		appender:    appenders.Console(),
-		children:    make([]Logger, 0),
-		parent:      nil,
-		ExitOnFatal: true,
+		level:    levels.DEBUG,
+		name:     name,
+		enabled:  make(map[levels.LogLevel]bool),
+		appender: appenders.Console(),
+		children: make([]Logger, 0),
+		parent:   nil,
 	})
 	l.SetLevel(levels.DEBUG)
 	return l
@@ -118,20 +100,10 @@ func (l *logger) GetLogger(name string) Logger {
 	return lg.GetLogger(name)
 }
 
-type stringer interface {
-	String() string
-}
-
 func (l *logger) write(level levels.LogLevel, params ...interface{}) {
 	a := l.Appender()
 	if a != nil {
-		if s, ok := params[0].(string); ok {
-			a.Write(level, s, params[1:]...)
-		} else if s, ok := params[0].(stringer); ok {
-			a.Write(level, s.String(), params[1:]...)
-		} else {
-			a.Write(level, fmt.Sprintf("%s", params[0]), params[1:]...)
-		}
+		a.Write(level, params[0].(string), params[1:]...)
 	}
 }
 
@@ -152,10 +124,6 @@ func (l *logger) Log(level levels.LogLevel, params ...interface{}) {
 		return
 	}
 	l.write(level, unwrap(params...)...)
-
-	if l.ExitOnFatal && level == levels.FATAL {
-		os.Exit(1)
-	}
 }
 
 func (l *logger) Level() levels.LogLevel {
@@ -187,17 +155,9 @@ func (l *logger) FullName() string {
 	return n
 }
 
-func (l *logger) Children() []Logger {
-	return l.children
-}
-
-func (l *logger) Parent() Logger {
-	return l.parent
-}
-
 func (l *logger) SetLevel(level levels.LogLevel) {
 	l.level = level
-	for k := range levels.LogLevelsToString {
+	for k, _ := range levels.LogLevelsToString {
 		if k <= level {
 			l.enabled[k] = true
 		} else {
@@ -217,5 +177,4 @@ func (l *logger) Error(params ...interface{})   { l.Log(levels.ERROR, params...)
 func (l *logger) Trace(params ...interface{})   { l.Log(levels.TRACE, params...) }
 func (l *logger) Printf(params ...interface{})  { l.Log(levels.INFO, params...) }
 func (l *logger) Println(params ...interface{}) { l.Log(levels.INFO, params...) }
-func (l *logger) Fatal(params ...interface{})   { l.Log(levels.FATAL, params...) }
 func (l *logger) Fatalf(params ...interface{})  { l.Log(levels.FATAL, params...) }
