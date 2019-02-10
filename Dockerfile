@@ -2,7 +2,7 @@
 # MailHog Dockerfile
 #
 
-FROM alpine:3.9
+FROM golang:1.11-alpine3.9
 
 # Install ca-certificates, required for the "release message" feature:
 RUN apk --no-cache add \
@@ -10,14 +10,16 @@ RUN apk --no-cache add \
 
 # Install MailHog:
 RUN apk --no-cache add --virtual build-dependencies \
-    go \
     git \
-  && mkdir -p /root/gocode \
-  && export GOPATH=/root/gocode \
   && go get github.com/email-tools/MailHog \
-  && mv /root/gocode/bin/MailHog /usr/local/bin \
-  && rm -rf /root/gocode \
   && apk del --purge build-dependencies
+
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /home/mailhog
+
+COPY --from=0 /go/bin/MailHog /usr/local/bin/MailHog
 
 # Add mailhog user/group with uid/gid 1000.
 # This is a workaround for boot2docker issue #581, see
@@ -25,8 +27,6 @@ RUN apk --no-cache add --virtual build-dependencies \
 RUN adduser -D -u 1000 mailhog
 
 USER mailhog
-
-WORKDIR /home/mailhog
 
 ENTRYPOINT ["MailHog"]
 
